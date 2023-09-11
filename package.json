@@ -1,7 +1,7 @@
 {
   "name": "@wecandobetter/node",
   "description": "Node is a graph execution engine.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",
