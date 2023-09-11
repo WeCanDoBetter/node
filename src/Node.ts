@@ -1,47 +1,5 @@
-import type { MaybePromise, MiddlewareProcessor } from "./types.js";
-import { pipeMiddleware } from "./util.js";
-
-/**
- * The activation function. The node will only be activated if the function
- * returns true.
- * @param T The type of the context.
- * @param node The node to activate.
- * @param ctx The context to activate.
- * @returns Whether the node should be activated.
- */
-export type ActivateFn<T> = (node: Node<T>, ctx: T) => boolean;
-
-/**
- * The activation function. The node will only be activated if the function
- * returns true. If the value is true, the node will always be activated.
- * @param T The type of the context.
- */
-export type ShouldActivate<T> = ActivateFn<T> | true;
-
-/**
- * A sink is a function which can be used to output the context to an external
- * system. Sinks are called after the node has been activated and all
- * middleware has been executed.
- * @param T The type of the context.
- */
-export type Sink<T> = (ctx: T) => MaybePromise<void>;
-
-/**
- * An output is a node that is linked to the node. When the node is activated,
- * the output will be touched with the same context. The output will only be
- * touched if the activation function returns true.
- * @param T The type of the context.
- */
-export interface Output<T> {
-  /** The node to output to. */
-  readonly node: Node<T>;
-
-  /**
-   * The activation function. The node will only be touched if the function
-   * returns true. If the value is true, the node will always be touched.
-   */
-  shouldActivate?: ShouldActivate<T>;
-}
+import type { Processor, ShouldActivate, Sink } from "./types.js";
+import { pipe } from "./util.js";
 
 export interface NodeInit<T> {
   /** The ID of the node. */
@@ -86,13 +44,13 @@ export class Node<T> {
   readonly metadata: Record<string, unknown> = {};
 
   /** The middleware stack. */
-  readonly stack: MiddlewareProcessor<T>[] = [];
+  readonly stack: Processor<T>[] = [];
 
   /** The activation function. */
   shouldActivate: ShouldActivate<T>;
 
   /** The outputs of the node. */
-  readonly #outputs = new Map<string, Output<T>>();
+  readonly #outputs = new Map<Node<T>, ShouldActivate<T>>();
   /** The sinks of the node. */
   readonly #sinks = new Set<Sink<T>>();
 
@@ -104,7 +62,7 @@ export class Node<T> {
   /**
    * The outputs of the node.
    */
-  get outputs(): ReadonlyMap<string, Output<T>> {
+  get outputs(): ReadonlyMap<Node<T>, ShouldActivate<T>> {
     return this.#outputs;
   }
 
@@ -124,7 +82,7 @@ export class Node<T> {
    * touched if the function returns true.
    */
   link(node: Node<T>, shouldActivate?: ShouldActivate<T>): Node<T> {
-    this.#outputs.set(node.id, { node, shouldActivate });
+    this.#outputs.set(node, shouldActivate ?? true);
     return this;
   }
 
@@ -134,7 +92,7 @@ export class Node<T> {
    * @param node The node to unlink.
    */
   unlink(node: Node<T>): Node<T> {
-    this.#outputs.delete(node.id);
+    this.#outputs.delete(node);
     return this;
   }
 
@@ -192,25 +150,25 @@ export class Node<T> {
    * @throws An {@link MiddlewareError} if the middleware failed to execute.
    */
   async touch(ctx: T, shouldActivate?: ShouldActivate<T>): Promise<void> {
-    if (
-      !Node.shouldActivate(shouldActivate ?? this.shouldActivate, this, ctx)
-    ) {
+    const activateFn = shouldActivate ?? this.shouldActivate;
+
+    if (!Node.shouldActivate(activateFn, this, ctx)) {
       return;
     }
 
     // NOTE: Errors are handled by the pipeline.
-    await pipeMiddleware(...this.stack)(ctx);
+    await pipe(...this.stack)(ctx);
 
     if (this.#outputs.size) {
       // Touch all outputs in parallel. We don't need to wait for them to
       // finish. We also don't care if they fail. We just want to make sure
       // they are touched, and don't hold up the control flow.
       Promise.allSettled(
-        [...this.#outputs.values()]
-          .filter(({ node, shouldActivate }) =>
-            Node.shouldActivate(shouldActivate, node, ctx)
-          )
-          .map(({ node }) => node.touch(ctx)),
+        [...this.#outputs.entries()].map(([node, shouldActivate]) =>
+          Node.shouldActivate(shouldActivate, node, ctx)
+            ? node.touch(ctx)
+            : null
+        ),
       );
     }
 
@@ -226,14 +184,14 @@ export class Node<T> {
 
   /**
    * Explore the node and its outputs. This method is used for debugging.
-   * @param wrap Whether to wrap the tree in an object with the node ID as the
-   * key.
+   * @param wrap Whether to wrap the tree in an object with this node's ID as
+   * the key. Defaults to true.
    * @returns A tree of the node and its outputs.
    */
-  explore(wrap = false): Record<string, Record<string, unknown>> {
+  explore(wrap = true): Record<string, Record<string, unknown>> {
     const tree: Record<string, Record<string, unknown>> = {};
 
-    for (const { node } of this.#outputs.values()) {
+    for (const node of this.#outputs.keys()) {
       tree[node.id] = node.explore(false);
     }
 

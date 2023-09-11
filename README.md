@@ -27,10 +27,10 @@ npm install @wecandobetter/node
 ## Usage 📘
 
 ```typescript
-import { Node } from "@wecandobetter/node";
+import Node from "@wecandobetter/node";
 
 // Create nodes and define their behavior
-const nodeA = new Node<number>({ id: "A", activate: (ctx) => ctx > 0 });
+const nodeA = new Node<number>({ id: "A", activate: (node, ctx) => ctx > 0 });
 const nodeB = new Node<number>({ id: "B" });
 
 // Link nodes together
@@ -53,9 +53,6 @@ await nodeA.touch(context);
 ```
 
 ## API Documentation 📜
-
-- [Node<T>](#Node)
-- [shouldActivate<T>](#shouldActivate)
 
 For detailed API documentation, please refer to the [API Documentation](API.md).
 

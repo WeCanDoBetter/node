@@ -1,5 +1,5 @@
 import { MiddlewareError, PipelineError } from "./errors.js";
-import type { MiddlewareExecutor, MiddlewareProcessor, Next } from "./types.js";
+import type { Executor, Next, Processor } from "./types.js";
 
 /**
  * Creates an executor that executes the given processors as middleware. The
@@ -11,9 +11,9 @@ import type { MiddlewareExecutor, MiddlewareProcessor, Next } from "./types.js";
  * @param processors The processors to execute as middleware.
  * @returns A processor that executes the given processors as middleware.
  */
-export function pipeMiddleware<T>(
-  ...processors: MiddlewareProcessor<T>[]
-): MiddlewareExecutor<T> {
+export function pipe<T>(
+  ...processors: Processor<T>[]
+): Executor<T> {
   return (ctx, signal) => {
     const stack = [...processors];
 
