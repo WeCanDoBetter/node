@@ -43,6 +43,17 @@ nodeA.link(nodeB);
 nodeA.link(nodeB, (node, ctx) => ctx.n > 0);
 ```
 
+## Sink Output
+
+```ts
+import Node from "@wecandobetter/node";
+
+const node = new Node<{ n: number }>({ id: "A" });
+
+// Sinks are executed when the node is activated and has completed processing
+node.sink((ctx) => console.log(`Sink output: ${ctx.n}`));
+```
+
 ## Touch a Node
 
 ```ts
@@ -55,17 +66,6 @@ const context = { n: 5 };
 
 // Touch the node with the context
 await node.touch(context);
-```
-
-## Sink Output
-
-```ts
-import Node from "@wecandobetter/node";
-
-const node = new Node<{ n: number }>({ id: "A" });
-
-// Sinks are executed when the node is activated and has completed processing
-node.sink((ctx) => console.log(`Sink output: ${ctx.n}`));
 ```
 
 ## Explore Nodes

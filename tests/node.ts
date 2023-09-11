@@ -17,7 +17,7 @@ describe("Node API", () => {
     const node = new Node<{ n: number }>({ id: "A" });
     const context = { n: 5 };
 
-    node.stack.push(async (ctx, next) => {
+    node.use(async (ctx, next) => {
       ctx.n += 10;
       await next();
     });

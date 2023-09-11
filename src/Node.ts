@@ -43,12 +43,11 @@ export class Node<T> {
   /** The metadata of the node. */
   readonly metadata: Record<string, unknown> = {};
 
-  /** The middleware stack. */
-  readonly stack: Processor<T>[] = [];
-
   /** The activation function. */
   shouldActivate: ShouldActivate<T>;
 
+  /** The middleware stack. */
+  readonly #stack: Processor<T>[] = [];
   /** The outputs of the node. */
   readonly #outputs = new Map<Node<T>, ShouldActivate<T>>();
   /** The sinks of the node. */
@@ -57,6 +56,13 @@ export class Node<T> {
   constructor({ id, shouldActivate }: NodeInit<T>) {
     this.id = id ?? crypto.randomUUID();
     this.shouldActivate = shouldActivate ?? true;
+  }
+
+  /**
+   * The middleware stack.
+   */
+  get stack(): ReadonlyArray<Processor<T>> {
+    return this.#stack;
   }
 
   /**
@@ -71,6 +77,16 @@ export class Node<T> {
    */
   get sinks(): ReadonlySet<Sink<T>> {
     return this.#sinks;
+  }
+
+  /**
+   * Adds one or more processors to the middleware stack. The processors will be
+   * executed in the order they are added.
+   * @param processors The processors to add.
+   */
+  use(...processors: Processor<T>[]): Node<T> {
+    this.#stack.push(...processors);
+    return this;
   }
 
   /**
@@ -129,7 +145,7 @@ export class Node<T> {
    * Clears the middleware stack.
    */
   clearStack(): Node<T> {
-    this.stack.length = 0;
+    this.#stack.length = 0;
     return this;
   }
 
@@ -157,7 +173,7 @@ export class Node<T> {
     }
 
     // NOTE: Errors are handled by the pipeline.
-    await pipe(...this.stack)(ctx);
+    await pipe(...this.#stack)(ctx);
 
     if (this.#outputs.size) {
       // Touch all outputs in parallel. We don't need to wait for them to
