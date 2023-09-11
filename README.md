@@ -30,23 +30,27 @@ npm install @wecandobetter/node
 import Node from "@wecandobetter/node";
 
 // Create nodes and define their behavior
-const nodeA = new Node<number>({ id: "A", activate: (node, ctx) => ctx > 0 });
-const nodeB = new Node<number>({ id: "B" });
+const nodeA = new Node<{ n: number }>({
+  id: "A",
+  activate: (node, ctx) => ctx.n > 0,
+});
+
+const nodeB = new Node<{ n: number }>({ id: "B" });
 
 // Link nodes together
 nodeA.link(nodeB);
 
 // Add middleware to process context
 nodeA.use(async (ctx, next) => {
-  ctx += 10;
-  await next(ctx);
+  ctx.n += 10;
+  await next();
 });
 
 // Define sinks for output
-nodeB.sink((ctx) => console.log(`Sink output: ${ctx}`));
+nodeB.sink((ctx) => console.log(`Sink output: ${ctx.n}`));
 
 // Touch the nodes with context
-const context = 5;
+const context = { n: 5 };
 await nodeA.touch(context);
 
 // Output: Sink output: 15

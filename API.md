@@ -5,9 +5,9 @@
 ```ts
 import Node from "@wecandobetter/node";
 
-const node = new Node<number>({
-  id: "A",
-  shouldActivate: (node, ctx) => ctx > 0,
+const node = new Node<{ n: number }>({
+  id: "A", // If not provided, a random UUID will be generated
+  shouldActivate: (node, ctx) => ctx.n > 0, // Optional activation function
 });
 ```
 
@@ -16,11 +16,13 @@ const node = new Node<number>({
 ```ts
 import Node from "@wecandobetter/node";
 
-const node = new Node<number>({ id: "A" });
+const node = new Node<{ n: number }>({ id: "A" });
 
+// Add as many middleware as you want
+// Middleware is executed in the order it is added
 node.use(async (ctx, next) => {
-  ctx += 10;
-  await next(ctx);
+  ctx.n += 10;
+  await next();
 });
 ```
 
@@ -29,10 +31,16 @@ node.use(async (ctx, next) => {
 ```ts
 import Node from "@wecandobetter/node";
 
-const nodeA = new Node<number>({ id: "A" });
-const nodeB = new Node<number>({ id: "B" });
+const nodeA = new Node<{ n: number }>({ id: "A" });
+const nodeB = new Node<{ n: number }>({ id: "B" });
 
+// Link node A to node B
+// When node A is activated and has completed processing, node B will be touched
 nodeA.link(nodeB);
+
+// Optionally provide an activation function
+// The linked node will only be touched if the activation function returns true
+nodeA.link(nodeB, (node, ctx) => ctx.n > 0);
 ```
 
 ## Touch a Node
@@ -40,9 +48,12 @@ nodeA.link(nodeB);
 ```ts
 import Node from "@wecandobetter/node";
 
-const node = new Node<number>({ id: "A" });
+const node = new Node<{ n: number }>({ id: "A" });
 
-const context = 5;
+// The context is passed to the activation function and middleware
+const context = { n: 5 };
+
+// Touch the node with the context
 await node.touch(context);
 ```
 
@@ -51,9 +62,10 @@ await node.touch(context);
 ```ts
 import Node from "@wecandobetter/node";
 
-const node = new Node<number>({ id: "A" });
+const node = new Node<{ n: number }>({ id: "A" });
 
-node.sink((ctx) => console.log(`Sink output: ${ctx}`));
+// Sinks are executed when the node is activated and has completed processing
+node.sink((ctx) => console.log(`Sink output: ${ctx.n}`));
 ```
 
 ## Explore Nodes
@@ -61,13 +73,14 @@ node.sink((ctx) => console.log(`Sink output: ${ctx}`));
 ```ts
 import Node from "@wecandobetter/node";
 
-const nodeA = new Node<number>({ id: "A" });
-const nodeB = new Node<number>({ id: "B" });
-const nodeC = new Node<number>({ id: "C" });
+const nodeA = new Node<{ n: number }>({ id: "A" });
+const nodeB = new Node<{ n: number }>({ id: "B" });
+const nodeC = new Node<{ n: number }>({ id: "C" });
 
 nodeA.link(nodeB);
 nodeB.link(nodeC);
 
+// Generate a graph representation of the node and its linked nodes
 console.log(nodeA.explore());
 
 // Output:
