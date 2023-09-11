@@ -1,5 +1,5 @@
-import type { MaybePromise, MiddlewareProcessor } from "./types";
-import { pipeMiddleware } from "./util";
+import type { MaybePromise, MiddlewareProcessor } from "./types.js";
+import { pipeMiddleware } from "./util.js";
 
 /**
  * The activation function. The node will only be activated if the function

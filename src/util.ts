@@ -1,5 +1,5 @@
-import { MiddlewareError, PipelineError } from "./errors";
-import type { MiddlewareExecutor, MiddlewareProcessor, Next } from "./types";
+import { MiddlewareError, PipelineError } from "./errors.js";
+import type { MiddlewareExecutor, MiddlewareProcessor, Next } from "./types.js";
 
 /**
  * Creates an executor that executes the given processors as middleware. The

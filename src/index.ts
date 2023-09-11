@@ -1,5 +1,5 @@
-export type * from "./types";
+export type * from "./types.js";
 
-export * from "./errors";
-export * from "./Node";
-export * from "./util";
+export * from "./errors.js";
+export * from "./Node.js";
+export * from "./util.js";
